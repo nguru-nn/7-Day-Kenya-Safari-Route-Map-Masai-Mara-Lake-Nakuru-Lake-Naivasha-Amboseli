@@ -1,0 +1,129 @@
+<!-- External Dependencies -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --safari-highlight: #FFD700;
+        --safari-dark: #1e293b;
+        --safari-text: #475569;
+        --safari-glass: rgba(253, 251, 247, 0.85);
+        --safari-glass-border: rgba(255, 215, 0, 0.3);
+    }
+    .wp-safari-itinerary-container {
+        position: relative; width: 100%; height: 700px; max-height: 85vh;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: #fdfbf7; overflow: hidden; border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    #safari-map { position: absolute; top: 0; bottom: 0; left: 0; right: 0; width: 100%; height: 100%; z-index: 1; }
+    .itinerary-sidebar {
+        position: absolute; top: 20px; left: 20px; width: 320px; max-height: calc(100% - 40px);
+        background: var(--safari-glass); backdrop-filter: blur(16px);
+        border: 1px solid var(--safari-glass-border); border-radius: 16px;
+        z-index: 10; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .itinerary-header { padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); }
+    .itinerary-header h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--safari-dark); text-transform: uppercase; letter-spacing: 1px; }
+    .itinerary-list { padding: 16px; overflow-y: auto; flex-grow: 1; }
+    .itinerary-card { background: rgba(255, 255, 255, 0.7); border-radius: 12px; padding: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.3s ease; }
+    .itinerary-card:hover, .itinerary-card.active { background: #fff; border: 1px solid var(--safari-highlight); }
+    .itinerary-day { font-size: 11px; font-weight: 700; color: #b49700; text-transform: uppercase; margin-bottom: 4px; }
+    .itinerary-title { font-size: 14px; font-weight: 600; color: var(--safari-dark); }
+    .itinerary-lodge { font-size: 12px; color: var(--safari-text); margin-top: 4px; }
+    @media (max-width: 768px) {
+        .itinerary-sidebar { top: auto; bottom: 0; left: 0; width: 100%; border-radius: 20px 20px 0 0; max-height: 40%; }
+    }
+</style>
+
+<div class="wp-safari-itinerary-container">
+    <div id="safari-map"></div>
+    <div class="itinerary-sidebar">
+        <div class="itinerary-header"><h3>Podróż Safari w Kenii</h3></div>
+        <div class="itinerary-list" id="itinerary-list"></div>
+    </div>
+</div>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const token = '';
+        mapboxgl.accessToken = token;
+
+        const itineraryData = [
+            { id: 'start', dayString: 'Start', title: 'Przylot do Kenii', lodge: 'Lotnisko Jomo Kenyatta', coords: [36.927222, -1.319167] },
+            { id: 'wp_nairobi', isWaypoint: true, title: 'Nairobi', coords: [36.8219, -1.2921] },
+            { id: 'wp_maimahiu', isWaypoint: true, title: 'Mai Mahiu', coords: [36.5828, -1.0177] },
+            { id: 'wp_narok', isWaypoint: true, title: 'Narok Town', coords: [35.8604, -1.0889] },
+            { id: 'day1', dayString: 'Dzień 1', title: 'Maasai Mara', lodge: 'Mara Sopa Lodge', coords: [35.390138, -1.592314] },
+            { id: 'day2', dayString: 'Dzień 2', title: 'Region Talek', lodge: 'Talek', coords: [35.144300, -1.406300] },
+            { id: 'wp_narok_ret', isWaypoint: true, title: 'Narok (Powrót)', coords: [35.8604, -1.0889] },
+            { id: 'wp_naivasha', isWaypoint: true, title: 'Naivasha', coords: [36.4310, -0.7143] },
+            { id: 'day3', dayString: 'Dzień 3', title: 'Jezioro Nakuru', lodge: 'Lake Nakuru Sopa Lodge', coords: [36.083333, -0.366667] },
+            { id: 'wp_gilgil', isWaypoint: true, title: 'Gilgil', coords: [36.3216, -0.4952] },
+            { id: 'day4', dayString: 'Dzień 4', title: 'Jezioro Naivasha', lodge: 'Lake Naivasha Sopa Resort', coords: [36.3750, -0.7833] },
+            { id: 'wp_nairobi_bypass', isWaypoint: true, title: 'Obwodnica Nairobi', coords: [36.8000, -1.3300] },
+            { id: 'wp_kajiado', isWaypoint: true, title: 'Kajiado', coords: [36.7833, -1.8500] },
+            { id: 'day5', dayString: 'Dzień 5', title: 'Przyjazd do Amboseli', lodge: 'Amboseli Sopa Lodge', coords: [37.3333, -2.6667] },
+            { id: 'day6', dayString: 'Dzień 6', title: 'Eksploracja Amboseli', lodge: 'Park Narodowy Amboseli', coords: [37.2500, -2.6500] },
+            { id: 'wp_namanga', isWaypoint: true, title: 'Namanga (Granica)', coords: [36.7800, -2.5500] },
+            { id: 'wp_athiriver', isWaypoint: true, title: 'Athi River', coords: [36.9800, -1.4500] },
+            { id: 'day7', dayString: 'Dzień 7', title: 'Wylot', lodge: 'Lotnisko Jomo Kenyatta', coords: [36.927222, -1.319167] }
+        ];
+
+        const map = new mapboxgl.Map({
+            container: 'safari-map', style: 'mapbox://styles/mapbox/standard-satellite',
+            center: [36.5, -0.5], zoom: 5.5, pitch: 60, cooperativeGestures: true
+        });
+
+        const listContainer = document.getElementById('itinerary-list');
+        const routeCoords = itineraryData.map(d => d.coords);
+
+        itineraryData.forEach(stop => {
+            if (stop.isWaypoint) return;
+            new mapboxgl.Marker({ color: '#FFD700' }).setLngLat(stop.coords).addTo(map);
+            const card = document.createElement('div');
+            card.className = 'itinerary-card';
+            card.innerHTML = `<div class="itinerary-day">${stop.dayString}</div><div class="itinerary-title">${stop.title}</div><div class="itinerary-lodge">${stop.lodge}</div>`;
+            card.onclick = () => map.flyTo({ center: stop.coords, zoom: 11, pitch: 50 });
+            listContainer.appendChild(card);
+        });
+
+        async function getDirectionsRoute(coords) {
+            let fullPath = [];
+            for (let i = 0; i < coords.length - 1; i++) {
+                const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords[i][0]},${coords[i][1]};${coords[i+1][0]},${coords[i+1][1]}?geometries=geojson&overview=full&access_token=${mapboxgl.accessToken}`;
+                const res = await fetch(url).then(r => r.json()).catch(() => null);
+                if (res?.routes?.length) fullPath.push(...res.routes[0].geometry.coordinates);
+                else fullPath.push(coords[i], coords[i+1]);
+            }
+            return fullPath;
+        }
+
+        map.on('load', async () => {
+            try {
+                map.addSource('custom-terrain-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1', 'tileSize': 512, 'maxzoom': 14 });
+                map.setTerrain({ 'source': 'custom-terrain-dem', 'exaggeration': 1.5 });
+            } catch(e) {}
+
+            const detailedRouteCoords = await getDirectionsRoute(routeCoords);
+            map.addSource('route', { 'type': 'geojson', 'data': { 'type': 'Feature', 'geometry': { 'type': 'LineString', 'coordinates': detailedRouteCoords } } });
+            
+            map.addLayer({ 'id': 'line-bg', 'type': 'line', 'source': 'route', 'paint': { 'line-color': '#FFD700', 'line-width': 4, 'line-opacity': 0.3 } });
+            map.addLayer({ 'id': 'line-ant', 'type': 'line', 'source': 'route', 'paint': { 'line-color': '#FFD700', 'line-width': 4, 'line-dasharray': [0, 4, 3], 'line-emissive-strength': 1 } });
+            
+            const dashArraySequence = [[0,4,3],[0.5,4,2.5],[1,4,2],[1.5,4,1.5],[2,4,1],[2.5,4,0.5],[3,4,0],[0,0.5,3,3.5],[0,1,3,3],[0,1.5,3,2.5],[0,2,3,2],[0,2.5,3,1.5],[0,3,3,1],[0,3.5,3,0.5]];
+            let step = 0;
+            function animate() {
+                step = (step + 1) % dashArraySequence.length;
+                map.setPaintProperty('line-ant', 'line-dasharray', dashArraySequence[step]);
+                setTimeout(() => requestAnimationFrame(animate), 50);
+            }
+            animate();
+            
+            const bounds = new mapboxgl.LngLatBounds();
+            routeCoords.forEach(c => bounds.extend(c));
+            map.fitBounds(bounds, { padding: 50 });
+        });
+    });
+</script>
