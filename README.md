@@ -1,0 +1,2 @@
+# 7-Day-Kenya-Safari-Route-Map-Masai-Mara-Lake-Nakuru-Lake-Naivasha-Amboseli
+An interactive 3D map of a 7-day road safari across Kenya's classic circuit. The trip starts and ends at Jomo Kenyatta International Airport in Nairobi. Along the way it crosses the Great Rift Valley to the Masai Mara, visits the flamingo lake of Lake Nakuru and the freshwater Lake Naivasha, and finishes in Amboseli beneath Kilimanjaro.
